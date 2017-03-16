@@ -68,6 +68,11 @@ void GazeboMavlinkInterface::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf
   getSdfParam<std::string>(_sdf, "lidarSubTopic", lidar_sub_topic_, lidar_sub_topic_);
   getSdfParam<std::string>(_sdf, "opticalFlowSubTopic",
       opticalFlow_sub_topic_, opticalFlow_sub_topic_);
+  getSdfParam<double>(_sdf, "referenceLatitude", lat_ref_, lat_zurich);
+  getSdfParam<double>(_sdf, "referenceLongitude", lon_ref_, lon_zurich);
+  getSdfParam<double>(_sdf, "referenceAltitude", alt_ref_, alt_zurich);
+
+  std::cout << "Read lat = " << lat_ref_ << " long = " << lon_ref_ << " alt= " << alt_ref_ << std::endl;
 
   // set input_reference_ from inputs.control
   input_reference_.resize(n_out_max);
@@ -518,11 +523,11 @@ void GazeboMavlinkInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
   double sin_c = sin(c);
   double cos_c = cos(c);
   if (c != 0.0) {
-    lat_rad = asin(cos_c * sin(lat_zurich) + (x_rad * sin_c * cos(lat_zurich)) / c);
-    lon_rad = (lon_zurich + atan2(y_rad * sin_c, c * cos(lat_zurich) * cos_c - x_rad * sin(lat_zurich) * sin_c));
+    lat_rad = asin(cos_c * sin(lat_ref_) + (x_rad * sin_c * cos(lat_ref_)) / c);
+    lon_rad = (lon_ref_ + atan2(y_rad * sin_c, c * cos(lat_ref_) * cos_c - x_rad * sin(lat_ref_) * sin_c));
   } else {
-   lat_rad = lat_zurich;
-    lon_rad = lon_zurich;
+   lat_rad = lat_ref_;
+    lon_rad = lon_ref_;
   }
 
   if (current_time.Double() - last_gps_time_.Double() > gps_update_interval_) {  // 5Hz
@@ -532,7 +537,7 @@ void GazeboMavlinkInterface::OnUpdate(const common::UpdateInfo& /*_info*/) {
     hil_gps_msg.fix_type = 3;
     hil_gps_msg.lat = lat_rad * 180 / M_PI * 1e7;
     hil_gps_msg.lon = lon_rad * 180 / M_PI * 1e7;
-    hil_gps_msg.alt = (pos_W_I.z + alt_zurich) * 1000;
+    hil_gps_msg.alt = (pos_W_I.z + alt_ref_) * 1000;
     hil_gps_msg.eph = 100;
     hil_gps_msg.epv = 100;
     hil_gps_msg.vel = velocity_current_W_xy.GetLength() * 100;
@@ -717,7 +722,7 @@ void GazeboMavlinkInterface::ImuCallback(ImuPtr& imu_message) {
 
   hil_state_quat.lat = lat_rad * 180 / M_PI * 1e7;
   hil_state_quat.lon = lon_rad * 180 / M_PI * 1e7;
-  hil_state_quat.alt = (-pos_n.z + alt_zurich) * 1000;
+  hil_state_quat.alt = (-pos_n.z + alt_ref_) * 1000;
 
   hil_state_quat.vx = vel_n.x * 100;
   hil_state_quat.vy = vel_n.y * 100;

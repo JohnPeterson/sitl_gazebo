@@ -210,5 +210,10 @@ class GazeboMavlinkInterface : public ModelPlugin {
   in_addr_t mavlink_addr_;
   int mavlink_udp_port_;
 
+  // Extra added variables
+  double lat_ref_;
+  double lon_ref_;
+  double alt_ref_;
+
   };
 }
